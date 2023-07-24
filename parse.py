@@ -246,7 +246,7 @@ def extract_answer_section(dns_response, answer_section_start, num_answers):
 
         #get data length 
         data_length_value = int.from_bytes(dns_response[index:index + 2], byteorder='big')
-        # print("data_length_value is ", int.from_bytes(data_length_value, byteorder='big'))
+        print("data_length_value is ", data_length_value)
         index+=2 #increment to IP address
 
         #get ip address
