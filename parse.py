@@ -5,15 +5,30 @@ import struct
 
 
 def decode_response(returnedMessage):
-    print(returnedMessage)
+    # print(returnedMessage)
     #HEADER SECTION
     id, flags, question, answer, authority_rr, additional_rr = extract_header(returnedMessage[:12])
     print_header(id, flags, question, answer, authority_rr, additional_rr)
 
+    print("no slicing", returnedMessage)
     #QUESTION SECTION 
     # domain_name, q_type, q_class = extract_question_section(returnedMessage)
     domain, q_type, q_class, new_index = extract_question_section(returnedMessage)
     print_question(domain, q_type, q_class)
+
+
+    # print("slicing", returnedMessage[new_index:])
+    # prev_index = int.from_bytes(returnedMessage[new_index:new_index + 2],  byteorder='big')
+    # print(prev_index, "PREV INDEX")
+    # print("prev index is", prev_index)
+    # print("NEW INDEX",returnedMessage[prev_index:])
+
+
+
+    
+
+    print('HELLOOOLVIDJFHKUGDKUYGD')
+    print(returnedMessage[new_index:])
 
     #RESOURCE RECORDS
     #answer section
@@ -37,17 +52,17 @@ def decode_response(returnedMessage):
     answer_records = extract_answer_section(returnedMessage, curr_index, no_of_answers)
 
 
-    # extract elements from answer_records 
-    for i, record in enumerate(answer_records):
-        rr_type, rr_class, ttl, data_length, ip_address = record
-        print(f"Answer {i + 1}:")
-        print("Domain name:", domain_name)
-        print("Resource Record type:", rr_type)
-        print("Resource Record class:", rr_class)
-        print("TTL:", ttl)
-        print("Data Length:", data_length)
-        print("IP Address:", ip_address)
-        print()
+    # # extract elements from answer_records 
+    # for i, record in enumerate(answer_records):
+    #     rr_type, rr_class, ttl, data_length, ip_address = record
+    #     print(f"Answer {i + 1}:")
+    #     print("Domain name:", domain_name)
+    #     print("Resource Record type:", rr_type)
+    #     print("Resource Record class:", rr_class)
+    #     print("TTL:", ttl)
+    #     print("Data Length:", data_length)
+    #     print("IP Address:", ip_address)
+    #     print()
 
 
 
@@ -87,21 +102,13 @@ def extract_question_section(response):
     domain, index = extract_domain_name(response)
     q_type, q_class, index = extract_qtype_class(response, index)
 
-    #q type (2 octet) (2, 8 bits) (2 bytes), index_count increment 
-    # q_type = response[index:index+2]
-    # index+=2
-
-    # #q class (2 octet), index_count increment 
-    # q_class = response[index:index+2]
-    # index+=2
-
     return domain, q_type, q_class, index
 
 def extract_qtype_class(response, index):
+    #q class and type (2 octet), index_count increment 
     q_type = response[index:index+2]
     index+=2
 
-    #q class (2 octet), index_count increment 
     q_class = response[index:index+2]
     index+=2
 
@@ -223,6 +230,9 @@ def extract_answer_section(dns_response, answer_section_start, num_answers):
     index = answer_section_start
     index = loop_to_new_index(index, dns_response)
 
+    print()
+    print(dns_response[answer_section_start: answer_section_start +2])
+
     
     #list to store the extracted information for each resource record
     answer_records = []
@@ -260,6 +270,19 @@ def extract_answer_section(dns_response, answer_section_start, num_answers):
         #if AAAA type, IP address is 16 bytes
 
 
+        #if CNAME type, get CNAME
+        print(dns_response[index:])
+        if (rr_type == 5):
+            #CNAME (get domain name format)
+            print('STARTING INDEX number', dns_response[index])
+
+            domain, index_additional = extract_domain_without_index(dns_response[index:])
+            print("CNAME IS", domain)
+            index = index + index_additional
+
+            print("new index is", index)
+            print("remaining data is ", dns_response[index:])
+
         total_ans_count+=1
         index = loop_to_new_index(index, dns_response)
         # print("next answer section", dns_response[index:], '\n')
@@ -270,7 +293,27 @@ def extract_answer_section(dns_response, answer_section_start, num_answers):
 
     return answer_records
 
+def extract_domain_without_index(response):
+    index = 0
+    domain_name_parts = []
 
+    while True:
+        label_length = response[index]
+        index += 1
+
+        # find the end of domain name and break
+        if label_length == 0:
+            break
+
+        # Read the label itself and append it to the list of domain name parts
+        label = response[index : index + label_length].decode('utf-8')
+        domain_name_parts.append(label)
+        index += label_length
+
+    # join domain name
+    domain_name = '.'.join(domain_name_parts)
+    
+    return domain_name, index
 
 def loop_to_new_index(index, dns_response):
     answer = dns_response[index:]
