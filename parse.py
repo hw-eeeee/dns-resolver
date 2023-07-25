@@ -16,8 +16,28 @@ def decode_response(returnedMessage):
 
 
     #RESOURCE RECORDS
-    extract_resource_record(returnedMessage, new_index)
-
+    # answer ones 
+    print("ANSWERS")
+    i = 0
+    while i < int.from_bytes(answer, byteorder='big'):
+        print(f"Answer {i + 1}:")
+        name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
+        i += 1
+    
+    # authority ones 
+    print("AUTHORITY")
+    i = 0
+    while i < int.from_bytes(authority_rr, byteorder='big'):
+        print(f"Answer {i + 1}:")
+        name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
+        i += 1
+    
+    print("ADDITIONAL")
+    i = 0
+    while i < int.from_bytes(additional_rr, byteorder='big'):
+        print(f"Answer {i + 1}:")
+        name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
+        i += 1
 
 
 
@@ -70,14 +90,23 @@ def extract_qtype_class(response, index):
 def extract_domain_name(response, starting_index):
     index = starting_index
     domain_name_parts = []
+    # print(response)
+    # print("response length is", len(response))
+    # print("index is", index)
 
     #loop through response
     while True:
         label_length = response[index]
+        # print(label_length)
         index += 1
 
         # find the end of domain name and break
         if label_length == 0:
+            break
+
+        # for pointers 
+        if label_length == 192:
+            # print('HIIIIIIIIIII')
             break
 
         # Read the label itself and append it to the list of domain name parts
@@ -105,10 +134,8 @@ def print_question(domain, q_type, q_class):
 
 # RESOURCE RECORDS
 def extract_resource_record(response, curr_index):
-    print("RRS RECORDS")
+    # print("RRS RECORDS")
     #find the domain (could be compressed or not)
-    # print(response, '\n')
-    # print("first index", curr_index)
     name, new_index = rr_name_finder(response, curr_index)
     print("    NAME:", name)
     # print("update1:", new_index)
@@ -122,61 +149,43 @@ def extract_resource_record(response, curr_index):
 
     #next 4 bytes is ttl 
     ttl = response[new_index: new_index + 4]
-    new_index = new_index + 4  #increment
+    new_index = new_index + 4  #increment to get to data len
     print("    TTL:", int.from_bytes(ttl, byteorder='big'))
-    # print("    TTL:", ttl)
-    # print("update 3:", new_index)
-
-    # print(response[curr_index:])
-    # print()
-    # print(response[new_index:])
-
 
     #data len (2 byte)
     # data_len = response[new_index: new_index + 2]
     data_len = int.from_bytes(response[new_index:new_index + 2], byteorder='big')
     print("    DATA LENGTH:", data_len)
+    new_index = new_index + 2   #increment to get rdata 
 
+    # rdata (different for each one)
+    if int.from_bytes(q_type, byteorder='big') == 1:
+        # A data- A 32 bit Internet address.
+        ip_address_raw = response[new_index:new_index + 4]
+        data = socket.inet_ntoa(ip_address_raw)
 
-    # # domain, index = extract_domain_name(sliced_response, 12)
-    # print("    DOMAIN NAME:", domain)
-    # # print(full_response[index + curr_index:])
-    # new_index = index + curr_index
-    # print(full_response[new_index:])
+        new_index = new_index + 4
 
-    # # print(new_index, 'NEW INDEX NUMBER')
-    # # find closest multiple of 4 
-    # new_index = closest_multiple_of_4(new_index)
-    # print('NEW INDEX IS', new_index)
-    # print(full_response[new_index:])
-    # q_type, q_class, index = extract_qtype_class(full_response, new_index)
-    # # print("actual new index is", new_index)
-    # # new_index = 76
+    elif int.from_bytes(q_type, byteorder='big') == 2:
+        # NS data 
+        data, new_index = extract_domain_name(response, new_index)
 
-    # #q type (2 octet) (2, 8 bits) (2 bytes), index_count increment 
-    # # q_type = full_response[new_index:new_index+2]
-    # # new_index+=2
+    elif int.from_bytes(q_type, byteorder='big') == 5:
+        #CNAME data 
+        data, new_index = extract_domain_name(response, new_index)
 
-    # # #q class (2 octet), index_count increment 
-    # # q_class = full_response[new_index:new_index+2]
-    # # new_index+=2
+    print("    RDATA:", data)
 
-
-    # # print("    DOMAIN NAME:", domain)
-    # print("    QTYPE:", int.from_bytes(q_type, byteorder='big'))
-    # # print(q_type)
-    # print("    QCLASS:", int.from_bytes(q_class, byteorder='big'))
-    # # print(q_class)
-
-
-# def closest_multiple_of_4(n):
-#     if (n % 4):
-#         n = n + (4 - n % 4)
-#         return n
+    return name, q_type, q_class, ttl, data_len, data, new_index
+    
 
 def rr_name_finder(response, curr_index):
-    # print("indexed response: ", response[curr_index:])
-    #is it a pointer or an actual address? 
+    #    - a sequence of labels ending in a zero octet (normal address)
+    #    - a pointer
+    #    - a sequence of labels ending with a pointer
+
+
+    # - a pointer
     # (check first 2 bits of response)
     first_two_bytes = response[curr_index:curr_index + 2]
 
