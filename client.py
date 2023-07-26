@@ -30,7 +30,7 @@ def start_client():
     
     # print the received message
     # print("yo", returnedMessage)
-    print(serverAddress, "\n")
+    # print(serverAddress, "\n")
 
     #parse the message- decode it LATER UNCOMMENT THIS LINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     decode_response(returnedMessage)

@@ -10,47 +10,46 @@ def decode_response(returnedMessage):
     #HEADER SECTION
     id, flags, question, answer, authority_rr, additional_rr = extract_header(returnedMessage[:12])
     print_header(id, flags, question, answer, authority_rr, additional_rr)
+    header_info = (id, flags, question, answer, authority_rr, additional_rr)
 
     #QUESTION SECTION 
     domain, q_type, q_class, new_index = extract_question_section(returnedMessage)
     print_question(domain, q_type, q_class)
+    question_info = (domain, q_type, q_class)
 
     #RESOURCE RECORDS
     print("ANSWERS")    #ANSWER SECTION
+    all_answers = []
     i = 0
     while i < int.from_bytes(answer, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
         print_RR(name, q_type, q_class, ttl, data_len, data)
+        record = (name, q_type, q_class, ttl, data_len, data)
+        all_answers.append(record)
         i += 1
     
     print("\n\nAUTHORITY")    #AUTHORITY SECTION
+    all_authority = []
     i = 0
     while i < int.from_bytes(authority_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
         print_RR(name, q_type, q_class, ttl, data_len, data)
+        record = (name, q_type, q_class, ttl, data_len, data)
+        all_authority.append(record)
         i += 1
     
     print("\n\nADDITIONAL")    #ADDITIONAL SECTION
+    all_additional = []
     i = 0
     while i < int.from_bytes(additional_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
         print_RR(name, q_type, q_class, ttl, data_len, data)
+        record = (name, q_type, q_class, ttl, data_len, data)
+        all_additional.append(record)
         i += 1
 
-#PRINTING FUNCTIONS
-def print_header(id, flags, question, answer, authority_rr, additional_rr):
-    print("HEADER\n")
-    print("TRANSACTION ID:", hex(int.from_bytes(id, byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(flags, byteorder='big')))
-    print("QUESTIONS:", int.from_bytes(question, byteorder='big'), "\tANSWER RRs:", int.from_bytes(answer, byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(authority_rr, byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(additional_rr, byteorder='big'))
-    print("\n")
-
-def print_question(domain, q_type, q_class):
-    print("QUESTION SECTION\n")
-    print(f"DOMAIN NAME: {domain}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\n\n")
-
-
-def print_RR(name, q_type, q_class, ttl, data_len, data):
-    print(f"\t NAME: {name}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\tTTL:{int.from_bytes(ttl, byteorder='big')}\tDATA LENGTH:{data_len}\tRDATA:{data}")
+    
+    return header_info, question_info, all_answers, all_additional, all_authority
 
 
 
@@ -295,4 +294,22 @@ def extractKBits(num,k,p):
  
      # convert extracted sub-string into decimal again
      return (int(kBitSubStr,2))
+
+
+
+#PRINTING FUNCTIONS
+def print_header(id, flags, question, answer, authority_rr, additional_rr):
+    print("HEADER\n")
+    print("TRANSACTION ID:", hex(int.from_bytes(id, byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(flags, byteorder='big')))
+    print("QUESTIONS:", int.from_bytes(question, byteorder='big'), "\tANSWER RRs:", int.from_bytes(answer, byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(authority_rr, byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(additional_rr, byteorder='big'))
+    print("\n")
+
+def print_question(domain, q_type, q_class):
+    print("QUESTION SECTION\n")
+    print(f"DOMAIN NAME: {domain}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\n\n")
+
+
+def print_RR(name, q_type, q_class, ttl, data_len, data):
+    print(f"\t NAME: {name}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\tTTL:{int.from_bytes(ttl, byteorder='big')}\tDATA LENGTH:{data_len}\tRDATA:{data}")
+
 
