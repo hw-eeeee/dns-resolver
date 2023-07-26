@@ -5,6 +5,8 @@ import struct
 
 
 def decode_response(returnedMessage):
+    # print(returnedMessage)
+    # print("byte converted to hexadecimal value:",returnedMessage.hex())
     #HEADER SECTION
     id, flags, question, answer, authority_rr, additional_rr = extract_header(returnedMessage[:12])
     print_header(id, flags, question, answer, authority_rr, additional_rr)
@@ -25,7 +27,7 @@ def decode_response(returnedMessage):
     print("AUTHORITY")    #AUTHORITY SECTION
     i = 0
     while i < int.from_bytes(authority_rr, byteorder='big'):
-        print(f"Answer {i + 1}:")
+        print(f"Authority {i + 1}:")
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
         print_RR(name, q_type, q_class, ttl, data_len, data)
         i += 1
@@ -33,7 +35,7 @@ def decode_response(returnedMessage):
     print("ADDITIONAL")    #ADDITIONAL SECTION
     i = 0
     while i < int.from_bytes(additional_rr, byteorder='big'):
-        print(f"Answer {i + 1}:")
+        print(f"Additional {i + 1}:")
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
         print_RR(name, q_type, q_class, ttl, data_len, data)
         i += 1
@@ -97,24 +99,47 @@ def extract_qtype_class(response, index):
 
 #extracts domain name from server response
 def extract_domain_name(response, starting_index):
+    # bob = 0
     flags = False
     index = starting_index
     domain_name_parts = []
 
     #loop through response
     while True:
+        # check if it's a pointer 
+        # pointer = check_pointer(response[index:index + 2])
+        # if (pointer == True):
+        #     flags = True
+        #     break
+
         label_length = response[index]
-        # print(label_length)
+        # print("EXTRACTED RESPONSE IS", response[index])
+        # print("extracted partial is", response[index:index + 2])
+        # as_an_int = int.from_bytes(response[index:index + 2], byteorder='big')
+
+        # index_number = extractKBits(as_an_int, 14, 0)
+        # print("NEW INDEX NEBER IS",index_number)
+
+        # print("EXTRACTED RESPONSE IN BYTES", response[index:])
         index += 1
 
         # find the end of domain name and break
         if label_length == 0:
             break
 
-        # for pointers 
+        # for pointers # TODO change to a better if statement (this is like hard coding)
         if label_length == 192:
             # print('HIIIIIIIIIII')
+            index -= 1
+            # print("extracted partial is", response[index:index + 2])
+            # print("in hex this is ", response[index:index + 2].hex())
+            as_an_int = int.from_bytes(response[index:index + 2], byteorder='big')
+
+            index_number = extractKBits(as_an_int, 14, 0)
+            # print("NEW INDEX NEBER IS",index_number)
+            # print("WTFFFF", response[47:])
             flags = True
+        
             break
 
         # Read the label itself and append it to the list of domain name parts
@@ -131,6 +156,7 @@ def extract_domain_name(response, starting_index):
 
 # RESOURCE RECORDS
 def extract_resource_record(response, curr_index):
+    # print("???")
     # print("RRS RECORDS")
     #find the domain (could be compressed or not)
     name, new_index = rr_name_finder(response, curr_index)
@@ -144,7 +170,11 @@ def extract_resource_record(response, curr_index):
 
     #data len (2 byte)
     data_len = int.from_bytes(response[new_index:new_index + 2], byteorder='big')
+    # print(response[new_index:new_index + 2].hex())
+    
     new_index = new_index + 2   #increment to get rdata 
+    # print(response[new_index:].hex())
+    
 
     # rdata (different for each one)
     if int.from_bytes(q_type, byteorder='big') == 1:
@@ -155,27 +185,104 @@ def extract_resource_record(response, curr_index):
 
     elif int.from_bytes(q_type, byteorder='big') == 2:
         # NS data 
+        data_list = []
+        # print("ijsdfhoijdfhiodhfsoiau", response[new_index:].hex())
         data, new_index, flags = extract_domain_name(response, new_index)
-        # data, new_index = rr_name_finder(response, new_index)
+        data_list.append(data)
+        # print("post extract domain name index", new_index)
+        #
+        if (flags == True):
+            # theres additional data thats a pointers
+            # print("IT NOT FINISHED")
+            #find it 
+            # print(response[new_index:new_index+2])
+            # print(response[new_index:new_index+4])
+            two_bytes = response[new_index:new_index + 2]
+            # print(response[new_index:new_index + 2].hex())
+
+            if (check_pointer(two_bytes) == True):
+                #if first two bits are 1s, its a pointer 
+                # figure out it's index and pass into domain extractor 
+
+                as_an_int = int.from_bytes(two_bytes, byteorder='big')
+                index_number = extractKBits(as_an_int, 14, 0)
+                name_addition, ignore, flags = extract_domain_name(response, index_number)
+                data_list.append(name_addition)
+                data = '.'.join(data_list)
+                # print(data)
+                # print(response[new_index:].hex())
+                # print()
+                # print(response[new_index + 2:].hex())
+                # new_index = curr_index + 2
+                new_index = new_index + 2
+            # check_pointer(response[new_index:new_index+2])
+        # data, new_index = name_finder(response, new_index)
+
+        # new_index = new_index + 2
 
     elif int.from_bytes(q_type, byteorder='big') == 5:
         #CNAME data 
+        # data, new_index, flags = extract_domain_name(response, new_index)
+        # # data, new_index = rr_name_finder(response, new_index)
+
+        data_list = []
+        # print("ijsdfhoijdfhiodhfsoiau", response[new_index:].hex())
         data, new_index, flags = extract_domain_name(response, new_index)
-        # data, new_index = rr_name_finder(response, new_index)
+        data_list.append(data)
+        # print("post extract domain name index", new_index)
+        #
+        if (flags == True):
+            # theres additional data thats a pointers
+            # print("IT NOT FINISHED")
+            #find it 
+            # print(response[new_index:new_index+2])
+            # print(response[new_index:new_index+4])
+            two_bytes = response[new_index:new_index + 2]
+            # print(response[new_index:new_index + 2].hex())
+
+            if (check_pointer(two_bytes) == True):
+                #if first two bits are 1s, its a pointer 
+                # figure out it's index and pass into domain extractor 
+
+                as_an_int = int.from_bytes(two_bytes, byteorder='big')
+                index_number = extractKBits(as_an_int, 14, 0)
+                name_addition, ignore, flags = extract_domain_name(response, index_number)
+                data_list.append(name_addition)
+                data = '.'.join(data_list)
+                # print(data)
+                # print(response[new_index:].hex())
+                # print()
+                # print(response[new_index + 2:].hex())
+                # new_index = curr_index + 2
+                new_index = new_index + 2
+
+    # elif int.from_bytes(q_type, byteorder='big') == 18:
+    #     print("AAAA")
+    else:
+        # print()
+        # print(response[new_index:new_index + 16].hex())
+        data_potential = bytes_to_ipv6_address(response[new_index:new_index + 16])
+        # print(data_potential)
+        # print(socket.inet_ntoa(response[new_index:new_index + 16]))
+        # new_index = new_index + 16
+        data = data_potential
+        new_index = new_index + 16
+        
 
     return name, q_type, q_class, ttl, data_len, data, new_index
-    
 
-def name_finder(response, curr_index):
-    #    - a pointer
-    #    - a sequence of labels ending in a zero octet (normal address)
-    #    - a sequence of labels ending with a pointer
+def bytes_to_ipv6_address(raw_bytes):
+    # Convert raw bytes to a string of hexadecimal digits
+    hex_str = ''.join('{:02x}'.format(byte) for byte in raw_bytes)
 
-    #check if first 2 bits are 1s 
-    pass
+    # Insert colons to format the IPv6 address
+    ipv6_address = ':'.join(hex_str[i:i+4] for i in range(0, len(hex_str), 4))
+
+    return ipv6_address
 
 
 
+#TODO: rename and rewrite this with the logic added in rdata of the extract_resource_record function!!!
 def rr_name_finder(response, curr_index):
     #    - a pointer
     #    - a sequence of labels ending in a zero octet (normal address)
@@ -184,10 +291,9 @@ def rr_name_finder(response, curr_index):
     # - a pointer
     # (check first 2 bits of response)
     first_two_bytes = response[curr_index:curr_index + 2]
-    print(first_two_bytes)
+    # print("FROM RR", first_two_bytes)
 
     if (check_pointer(first_two_bytes) == True):
-        # print("fkdjflsd")
         #if first two bits are 1s, its a pointer 
         # figure out it's index and pass into domain extractor 
 
@@ -198,13 +304,10 @@ def rr_name_finder(response, curr_index):
 
     else:
         # else, address (use function to decode the rr name)
-        # if the flags are false, normal address 
-        # a sequence of labels ending in a zero octet
-        # print(response[curr_index:])
         name, new_index, flags = extract_domain_name(response, curr_index)
-        # print("YOOO NAME ", name)
         return_index = new_index
-        print(flags)
+
+        #check if return index has 1 as first 2 bits 
 
 
     # print("extracted name is ", name)
@@ -218,7 +321,6 @@ def check_pointer(first_two_bytes):
     as_an_int = int.from_bytes(first_two_bytes, byteorder='big')
 
     if (extractKBits(as_an_int, 1, 16) == 1) and (extractKBits(as_an_int, 1, 15) ==1):
-        print("both ")
         return True
 
     return False
@@ -228,7 +330,6 @@ def extractKBits(num,k,p):
  
      # convert number into binary first
      binary = bin(num)
-    #  print(binary)
  
      # remove first two characters
      binary = binary[2:]
