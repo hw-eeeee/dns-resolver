@@ -9,47 +9,97 @@ def decode_response(returnedMessage):
     # print("byte converted to hexadecimal value:",returnedMessage.hex())
     #HEADER SECTION
     id, flags, question, answer, authority_rr, additional_rr = extract_header(returnedMessage[:12])
-    print_header(id, flags, question, answer, authority_rr, additional_rr)
-    header_info = (id, flags, question, answer, authority_rr, additional_rr)
-
+    header_info = {
+    "id": id,
+    "flags": flags,
+    "question": question, 
+    "answer": answer, 
+    "authority_rr": authority_rr, 
+    "additional_rr": additional_rr
+    }
+    # print_header(header_info)
     #QUESTION SECTION 
     domain, q_type, q_class, new_index = extract_question_section(returnedMessage)
-    print_question(domain, q_type, q_class)
-    question_info = (domain, q_type, q_class)
+    question_info = {
+        "domain": domain,
+        "q_type": q_type,
+        "q_class": q_class
+    }
+    # print_question(question_info)
+
+
 
     #RESOURCE RECORDS
-    print("ANSWERS")    #ANSWER SECTION
+    # print("ANSWERS")    #ANSWER SECTION
     all_answers = []
     i = 0
     while i < int.from_bytes(answer, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        print_RR(name, q_type, q_class, ttl, data_len, data)
-        record = (name, q_type, q_class, ttl, data_len, data)
+        # print_RR(name, q_type, q_class, ttl, data_len, data)
+        # record = (name, q_type, q_class, ttl, data_len, data)
+        record = {
+            "name": name,
+            "q_type": q_type,
+            "q_class": q_class, 
+            "ttl": ttl,
+            "data_len": data_len,
+            "data": data
+        }
+        # print_RR(record)
+
         all_answers.append(record)
         i += 1
     
-    print("\n\nAUTHORITY")    #AUTHORITY SECTION
+    # print("\n\nAUTHORITY")    #AUTHORITY SECTION
     all_authority = []
     i = 0
     while i < int.from_bytes(authority_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        print_RR(name, q_type, q_class, ttl, data_len, data)
-        record = (name, q_type, q_class, ttl, data_len, data)
+        # print_RR(name, q_type, q_class, ttl, data_len, data)
+        # record = (name, q_type, q_class, ttl, data_len, data)
+        record = {
+            "name": name,
+            "q_type": q_type,
+            "q_class": q_class, 
+            "ttl": ttl,
+            "data_len": data_len,
+            "data": data
+        }
+        # print_RR(record)
+
         all_authority.append(record)
         i += 1
     
-    print("\n\nADDITIONAL")    #ADDITIONAL SECTION
+    # print("\n\nADDITIONAL")    #ADDITIONAL SECTION
     all_additional = []
     i = 0
     while i < int.from_bytes(additional_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        print_RR(name, q_type, q_class, ttl, data_len, data)
-        record = (name, q_type, q_class, ttl, data_len, data)
+        # print_RR(name, q_type, q_class, ttl, data_len, data)
+        # record = (name, q_type, q_class, ttl, data_len, data)
+        record = {
+            "name": name,
+            "q_type": q_type,
+            "q_class": q_class, 
+            "ttl": ttl,
+            "data_len": data_len,
+            "data": data
+        }
+        # print_RR(record)
+
         all_additional.append(record)
         i += 1
 
-    
-    return header_info, question_info, all_answers, all_additional, all_authority
+    # print('INSIDE PARSE')
+    # print("all additional:")
+    # print(all_additional)
+
+    # print()
+
+    # print("all authority ")
+    # print(all_authority)
+    # print("")
+    return header_info, question_info, all_answers, all_authority, all_additional
 
 
 
@@ -297,19 +347,34 @@ def extractKBits(num,k,p):
 
 
 
-#PRINTING FUNCTIONS
-def print_header(id, flags, question, answer, authority_rr, additional_rr):
+#PRINTING FUNCTIONS FOR DEBUGGING
+def print_header(header_info):
     print("HEADER\n")
-    print("TRANSACTION ID:", hex(int.from_bytes(id, byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(flags, byteorder='big')))
-    print("QUESTIONS:", int.from_bytes(question, byteorder='big'), "\tANSWER RRs:", int.from_bytes(answer, byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(authority_rr, byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(additional_rr, byteorder='big'))
+    print("TRANSACTION ID:", hex(int.from_bytes(header_info['id'], byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(header_info['flags'], byteorder='big')))
+    print("QUESTIONS:", int.from_bytes(header_info['question'], byteorder='big'), "\tANSWER RRs:", int.from_bytes(header_info['answer'], byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(header_info['authority_rr'], byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(header_info['additional_rr'], byteorder='big'))
     print("\n")
 
-def print_question(domain, q_type, q_class):
+def print_question(question_info):
     print("QUESTION SECTION\n")
-    print(f"DOMAIN NAME: {domain}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\n\n")
+    print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n\n")
 
 
-def print_RR(name, q_type, q_class, ttl, data_len, data):
-    print(f"\t NAME: {name}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\tTTL:{int.from_bytes(ttl, byteorder='big')}\tDATA LENGTH:{data_len}\tRDATA:{data}")
+def print_RR(rr_info):
+    print(f"\t NAME: {rr_info['name']}\tQTYPE: {int.from_bytes(rr_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(rr_info['q_class'], byteorder='big')}\tTTL:{int.from_bytes(rr_info['ttl'], byteorder='big')}\tDATA LENGTH:{rr_info['data_len']}\tRDATA:{rr_info['data']}")
+
+
+# def print_header(id, flags, question, answer, authority_rr, additional_rr):
+#     print("HEADER\n")
+#     print("TRANSACTION ID:", hex(int.from_bytes(id, byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(flags, byteorder='big')))
+#     print("QUESTIONS:", int.from_bytes(question, byteorder='big'), "\tANSWER RRs:", int.from_bytes(answer, byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(authority_rr, byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(additional_rr, byteorder='big'))
+#     print("\n")
+
+# def print_question(domain, q_type, q_class):
+#     print("QUESTION SECTION\n")
+#     print(f"DOMAIN NAME: {domain}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\n\n")
+
+
+# def print_RR(name, q_type, q_class, ttl, data_len, data):
+#     print(f"\t NAME: {name}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\tTTL:{int.from_bytes(ttl, byteorder='big')}\tDATA LENGTH:{data_len}\tRDATA:{data}")
 
 

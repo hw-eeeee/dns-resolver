@@ -27,17 +27,59 @@ def start_client():
     # decode_response(dns_query)
 
     returnedMessage, serverAddress = clientSocket.recvfrom(2048)
-    
+    clientSocket.close()
     # print the received message
     # print("yo", returnedMessage)
     # print(serverAddress, "\n")
 
-    #parse the message- decode it LATER UNCOMMENT THIS LINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    decode_response(returnedMessage)
+    #parse the message- decode it
+    header_info, question_info, all_answers, all_authority, all_additional = decode_response(returnedMessage)
     
+    #now check if answer section is all A type and if there are CNames that can be 
+    #further resolved. Append the answers to a list
+    ip_addresses = []
+    c_name_answers = []
+    for answer in all_answers:
+        ip_addresses.append(answer)
+        if (int.from_bytes(answer['q_type'], byteorder='big')) == 5:
+            c_name_answers.append(answer)
 
+    # print("ip addresses", ip_addresses)
+    # print()
+    # print(c_name_answers)
+
+    #if theres cnames
+    if len(c_name_answers) > 0:
+        # print("send query again")
+        new_domain_name = c_name_answers[0]["data"]
+        dns_query = create_DNS_query(new_domain_name)
+        clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
+        returnedMessage, serverAddress = clientSocket.recvfrom(2048)
+        header_info1, question_info1, all_answers1, all_authority1, all_additional1 = decode_response(returnedMessage)
+    
+    try:
+        for answer in all_answers1:
+            if answer not in ip_addresses:
+                ip_addresses.append(answer)
+    except:
+        pass
+
+    # print("ip addresses", ip_addresses)
+
+    # print in dig formatting 
+    print_ip_addresses(ip_addresses)
+    
     clientSocket.close()
-    # Close the socket
+
+
+
+def print_ip_addresses(ip_addresses):
+    for content in ip_addresses:
+        print(f"{content['name']}\tQTYPE: {int.from_bytes(content['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(content['q_class'], byteorder='big')}\tTTL:{int.from_bytes(content['ttl'], byteorder='big')}\tDATA LENGTH:{content['data_len']}\tIP ADDRESS:{content['data']}")
+
+
 
 
 # automatically type A if no further arguments are given
