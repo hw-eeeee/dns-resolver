@@ -1,6 +1,6 @@
 import socket
 import sys
-from parse import decode_response, extract_header
+from parse import decode_response, extract_header, extractKBits
 
 
 if (len(sys.argv) != 2):
@@ -27,14 +27,16 @@ def start_server():
         # perform dns resolving 
         response = dns_resolver(dns_query)
 
-        #ERROR CHECKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if response == 1 or response == 2 or response == 3:
+            response = str(response).encode('utf-8')
+
+        #ERROR CHECKING!
         serverSocket.sendto(response, clientAddress)
 
     serverSocket.close()
 
 def dns_resolver(dns_query):
     
-
     #parse the name.root file and store root servers as list 
     root_file_path = './named.root'
 
@@ -43,7 +45,8 @@ def dns_resolver(dns_query):
     i = 0
     a_root_server = root_server_list[i]
    
-    try:
+    #loop through root server list- if succeed break! 
+    while (i < len(root_server_list)):
         # Send the DNS query to the root DNS server
         newSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -52,22 +55,24 @@ def dns_resolver(dns_query):
         # Receive the DNS response
         response, server_address = newSocket.recvfrom(4096) 
 
-        #ERROR CHECKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #check the bottom 4 bits of flags is 0
-        # id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
-        #get bottom 4 bits 
-        # print("id is ", id)
-        # print("flags are", flags)
+        #ERROR CHECKING
         id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
-        print("id is ", id)
-        print("flags are", flags)
-        print("flags in binary", bin(int.from_bytes(flags, byteorder='big')))
+        return_error = error_checking(flags)
 
-        # Process and parse the DNS response as needed
-        header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+        if return_error != 2 and return_error != 0:
+            return return_error
+        elif return_error == 2:
+            # if not all root servers have been tried 
+            if (i < len(root_server_list) - 1):
+                i+=1 #LOOP TO NEXT ROOT SERVER- TRY ALL BEFORE RETURNING ERROR
+            else: 
+                return return_error
 
-    except socket.error as e:
-        print(f"An error occurred: {e}")
+        else:
+            # Process and parse the DNS response as needed
+            header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+            break
+
 
 
     #now loop until we get answer != 0 
@@ -75,26 +80,43 @@ def dns_resolver(dns_query):
         #loop and keep querying 
         server_record = find_new_record(header_info, all_authority, all_additional)
         new_server_ip = server_record['data']
-        # try:
         newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
-        # except socket.error as e:
-            # print(f"An error occurred: {e}")
-            # exit(1)
 
         response, server_address = newSocket.recvfrom(4096)
         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
 
         #error checking
-        id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
-        print("id is ", id)
-        print("flags are", flags)
-        #if bottom 4 bits are not 0, error (CHECK WHICH TYPEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE)
-        print("flags in binary", bin(int.from_bytes(flags, byteorder='big')))
+        flags = header_info['flags']
+        return_error = error_checking(flags)
+        if (return_error != 0):
+            return return_error
         
-    
     newSocket.close()
     
     return response
+
+
+
+def error_checking(flags):
+    #if bottom 4 bits are not 0, error (CHECK WHICH TYPE)
+
+    bottom_4_int = extractKBits(int.from_bytes(flags, byteorder='big'), 4, 0)
+
+    if (bottom_4_int == 0):
+        print("NO ERROR")
+        return 0
+    elif (bottom_4_int == 1):
+        print("FORMAT ERROR")
+        return 1
+    elif (bottom_4_int == 2):
+        print("Server Error")
+        return 2
+    elif (bottom_4_int == 3):
+        print("NO SUCH NAME ERROR")
+        return 3
+
+
+
 
 def find_new_record(header_info, all_authority, all_additional):
     #find server to use 
