@@ -6,7 +6,7 @@ import struct
 
 def decode_response(returnedMessage):
     # print(returnedMessage)
-    # print("byte converted to hexadecimal value:",returnedMessage.hex())
+
     #HEADER SECTION
     id, flags, question, answer, authority_rr, additional_rr = extract_header(returnedMessage[:12])
     header_info = {
@@ -18,6 +18,7 @@ def decode_response(returnedMessage):
     "additional_rr": additional_rr
     }
     # print_header(header_info)
+    
     #QUESTION SECTION 
     domain, q_type, q_class, new_index = extract_question_section(returnedMessage)
     question_info = {
@@ -35,8 +36,6 @@ def decode_response(returnedMessage):
     i = 0
     while i < int.from_bytes(answer, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        # print_RR(name, q_type, q_class, ttl, data_len, data)
-        # record = (name, q_type, q_class, ttl, data_len, data)
         record = {
             "name": name,
             "q_type": q_type,
@@ -55,8 +54,6 @@ def decode_response(returnedMessage):
     i = 0
     while i < int.from_bytes(authority_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        # print_RR(name, q_type, q_class, ttl, data_len, data)
-        # record = (name, q_type, q_class, ttl, data_len, data)
         record = {
             "name": name,
             "q_type": q_type,
@@ -75,8 +72,6 @@ def decode_response(returnedMessage):
     i = 0
     while i < int.from_bytes(additional_rr, byteorder='big'):
         name, q_type, q_class, ttl, data_len, data, new_index = extract_resource_record(returnedMessage, new_index)
-        # print_RR(name, q_type, q_class, ttl, data_len, data)
-        # record = (name, q_type, q_class, ttl, data_len, data)
         record = {
             "name": name,
             "q_type": q_type,
@@ -90,15 +85,6 @@ def decode_response(returnedMessage):
         all_additional.append(record)
         i += 1
 
-    # print('INSIDE PARSE')
-    # print("all additional:")
-    # print(all_additional)
-
-    # print()
-
-    # print("all authority ")
-    # print(all_authority)
-    # print("")
     return header_info, question_info, all_answers, all_authority, all_additional
 
 
@@ -262,7 +248,6 @@ def rr_name_finder(response, curr_index):
     # - a pointer
     # (check first 2 bits of response)
     first_two_bytes = response[curr_index:curr_index + 2]
-    # print("FROM RR", first_two_bytes.hex())
 
     if (check_pointer(first_two_bytes) == True):
         data_list = []
@@ -347,6 +332,7 @@ def extractKBits(num,k,p):
 
 
 
+
 #PRINTING FUNCTIONS FOR DEBUGGING
 def print_header(header_info):
     print("HEADER\n")
@@ -379,21 +365,7 @@ def print_RR(rr_info):
 def print_partial_header(header_info):
     print("HEADER")
     print("TRANSACTION ID:", hex(int.from_bytes(header_info['id'], byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(header_info['flags'], byteorder='big')))
-    # print("QUESTIONS:", int.from_bytes(header_info['question'], byteorder='big'), "\tANSWER RRs:", int.from_bytes(header_info['answer'], byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(header_info['authority_rr'], byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(header_info['additional_rr'], byteorder='big'))
     print("\n")
 
-# def print_header(id, flags, question, answer, authority_rr, additional_rr):
-#     print("HEADER\n")
-#     print("TRANSACTION ID:", hex(int.from_bytes(id, byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(flags, byteorder='big')))
-#     print("QUESTIONS:", int.from_bytes(question, byteorder='big'), "\tANSWER RRs:", int.from_bytes(answer, byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(authority_rr, byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(additional_rr, byteorder='big'))
-#     print("\n")
-
-# def print_question(domain, q_type, q_class):
-#     print("QUESTION SECTION\n")
-#     print(f"DOMAIN NAME: {domain}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\n\n")
-
-
-# def print_RR(name, q_type, q_class, ttl, data_len, data):
-#     print(f"\t NAME: {name}\tQTYPE: {int.from_bytes(q_type, byteorder='big')}\tQCLASS: {int.from_bytes(q_class, byteorder='big')}\tTTL:{int.from_bytes(ttl, byteorder='big')}\tDATA LENGTH:{data_len}\tRDATA:{data}")
 
 

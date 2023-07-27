@@ -1,6 +1,6 @@
 import socket
 import sys
-from parse import decode_response
+from parse import decode_response, extract_header
 
 
 if (len(sys.argv) != 2):
@@ -10,37 +10,26 @@ if (len(sys.argv) != 2):
 
 def start_server():
     host = 'localhost'
-    # port = 12345
     port = int(sys.argv[1])
 
 
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #This line creates the server’s socket, called serverSocket. The first parameter indicates the address family; in particular,AF_INET indicates that the underlying network is using IPv4.The second parameter indicates that the socket is of type SOCK_DGRAM,which means it is a UDP socket (rather than a TCP socket, where we use SOCK_STREAM).
 
     serverSocket.bind(('localhost', port))
-    #The above line binds (that is, assigns) the port number 12000 to the server’s socket. In this manner, when anyone sends a packet to port 12000 at the IP address of the server (localhost in this case), that packet will be directed to this socket.
+
     print('The server is ready to receive')
+    
     while 1:
         dns_query, clientAddress = serverSocket.recvfrom(2048)
         #receive data from the client, now we know who we are talking with
-        
-        # print("dns query is", dns_query)
-
-        # data = message.decode()
-        # print("domain name is ",data)
-        # modifiedMessage = message.upper()
-        #change the case of the message received from client
+        print("dns query is", dns_query)
 
         # perform dns resolving 
         response = dns_resolver(dns_query)
 
-
-        # serverSocket.sendto(modifiedMessage, clientAddress)
-        # message = "recieved yoooo" #REPLACE THIS WITH ACTUAL RESPONSE FROM NAME SERVERS 
+        #ERROR CHECKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         serverSocket.sendto(response, clientAddress)
 
-    #send it back to client, need to specify the client address in sendto
-    
     serverSocket.close()
 
 def dns_resolver(dns_query):
@@ -63,6 +52,17 @@ def dns_resolver(dns_query):
         # Receive the DNS response
         response, server_address = newSocket.recvfrom(4096) 
 
+        #ERROR CHECKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #check the bottom 4 bits of flags is 0
+        # id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
+        #get bottom 4 bits 
+        # print("id is ", id)
+        # print("flags are", flags)
+        id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
+        print("id is ", id)
+        print("flags are", flags)
+        print("flags in binary", bin(int.from_bytes(flags, byteorder='big')))
+
         # Process and parse the DNS response as needed
         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
 
@@ -71,19 +71,25 @@ def dns_resolver(dns_query):
 
 
     #now loop until we get answer != 0 
-    # while (header_info[])
     while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
         #loop and keep querying 
         server_record = find_new_record(header_info, all_authority, all_additional)
-        # print("new record!!!!")
-        # print(server_record)
         new_server_ip = server_record['data']
-        # print("new server ip is", new_server_ip)
+        # try:
         newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
+        # except socket.error as e:
+            # print(f"An error occurred: {e}")
+            # exit(1)
 
         response, server_address = newSocket.recvfrom(4096)
-        # print("huh")
         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+
+        #error checking
+        id, flags, question, answer, authority_rr, additional_rr = extract_header(response[:12])
+        print("id is ", id)
+        print("flags are", flags)
+        #if bottom 4 bits are not 0, error (CHECK WHICH TYPEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE)
+        print("flags in binary", bin(int.from_bytes(flags, byteorder='big')))
         
     
     newSocket.close()
@@ -93,17 +99,12 @@ def dns_resolver(dns_query):
 def find_new_record(header_info, all_authority, all_additional):
     #find server to use 
     if ((int.from_bytes(header_info['additional_rr'], byteorder='big')) > 0):
-        # print("yo")
-        # print(all_additional)
         for additional_records in all_additional:
             if ((int.from_bytes(additional_records['q_type'], byteorder='big')) == 1):
                 return additional_records
-                
     else: 
 
-        # print(all_authority)
         for authority_records in all_authority:
-            # if ((int.from_bytes(authority_records['q_type'], byteorder='big')) == 1):
             return authority_records
 
 
@@ -115,14 +116,10 @@ def parse_root_file(file_path):
         for line in named_root_file:
             if not line or line.startswith(';'):
                 continue  # Skip empty lines or comments
-            # print(line)
+
             parts = line.split()
             if (parts[2] == 'A'):
-                # print(parts)
                 a_roots.append(parts[-1])
-            # if len(parts) == 2:
-            #     ip_address, domain_name = parts
-            #     roots.append((ip_address, domain_name))
     return a_roots
 
 if __name__ == '__main__':

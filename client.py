@@ -23,14 +23,9 @@ def start_client():
 
     # UDP we explicilty specify the destination address + Port No for each message
     clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
-    # print(dns_query)
-    # decode_response(dns_query)
 
     returnedMessage, serverAddress = clientSocket.recvfrom(2048)
     clientSocket.close()
-    # print the received message
-    # print("yo", returnedMessage)
-    # print(serverAddress, "\n")
 
     #parse the message- decode it
     header_info, question_info, all_answers, all_authority, all_additional = decode_response(returnedMessage)
@@ -43,10 +38,6 @@ def start_client():
         ip_addresses.append(answer)
         if (int.from_bytes(answer['q_type'], byteorder='big')) == 5:
             c_name_answers.append(answer)
-
-    # print("ip addresses", ip_addresses)
-    # print()
-    # print(c_name_answers)
 
     while len(c_name_answers) > 0:
         # print("send query again")
@@ -68,27 +59,6 @@ def start_client():
         except:
             pass
 
-
-    #if theres cnames
-    # if len(c_name_answers) > 0:
-    #     # print("send query again")
-    #     new_domain_name = c_name_answers[0]["data"]
-    #     dns_query = create_DNS_query(new_domain_name)
-    #     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    #     clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
-    #     returnedMessage, serverAddress = clientSocket.recvfrom(2048)
-    #     header_info1, question_info1, all_answers1, all_authority1, all_additional1 = decode_response(returnedMessage)
-    
-    # try:
-    #     for answer in all_answers1:
-    #         if answer not in ip_addresses:
-    #             ip_addresses.append(answer)
-    # except:
-    #     pass
-
-    # print("ip addresses", ip_addresses)
-
     # print in dig formatting 
     print_partial_header(header_info)
     print_question(question_info)
@@ -102,7 +72,6 @@ def start_client():
 def print_ip_addresses(ip_addresses):
     print("ANSWER SECTION:")
     for content in ip_addresses:
-        # print(f"{content['name']}\tQTYPE: {int.from_bytes(content['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(content['q_class'], byteorder='big')}\tTTL:{int.from_bytes(content['ttl'], byteorder='big')}\tDATA LENGTH:{content['data_len']}\tIP ADDRESS:{content['data']}")
         print(f"{content['name']}\tQTYPE: ", end="")
         if (int.from_bytes(content['q_type'], byteorder='big') == 1):
             print("A", end="")
@@ -150,7 +119,5 @@ def create_DNS_query(domain_name, query_type = 'A'):
 
 if __name__ == '__main__':
     start_client()
-    # print("help")
-    # print(socket.inet_ntoa(b'\xa2\x9f\x18\xb3'))
 
 
