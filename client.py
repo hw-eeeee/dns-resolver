@@ -5,9 +5,9 @@ import struct
 import time, signal
 from parse import decode_response, print_question, print_header, print_partial_header
 
-if len(sys.argv) <= 3:
+if len(sys.argv) <= 3 or len(sys.argv) >= 7 :
     print("Error: invalid arguments")
-    print("Usage: client resolver_ip resolver_port name [timeout=5]")
+    print("Usage: client resolver_ip resolver_port name [timeout=5] [type=A]")
     exit(1)
 
 def start_client():
