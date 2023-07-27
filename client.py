@@ -16,36 +16,50 @@ def start_client():
     resolver_port = int(sys.argv[2])
     domain_name = sys.argv[3]
 
-    if len(sys.argv) == 4:
-        timeout = 5
-    else:
+    #default 
+    timeout = 5
+    query_type = "A"
+
+    if len(sys.argv) == 5:
+        # see if arg[4] is timeout or query type by checking if its a number 
+        if (sys.argv[4].isnumeric()):
+            timeout = sys.argv[4]
+        else: 
+            query_type = sys.argv[4]
+    elif len(sys.argv) == 6:
+        #both arguments there
         timeout = sys.argv[4]
+        query_type = sys.argv[5]
+
+    # print("timeout is ", timeout)
+    # print("query type is", query_type)
+
     
-    run_query_with_timeout(domain_name, resolver_ip, resolver_port, int(timeout))
+    run_query_with_timeout(domain_name, resolver_ip, resolver_port, int(timeout), query_type)
 
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Code execution took too long.")
 
 
-def run_query_with_timeout(domain_name, resolver_ip, resolver_port, timeout):
+def run_query_with_timeout(domain_name, resolver_ip, resolver_port, timeout, query_type):
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(timeout)
 
     try:
-        run_query(domain_name, resolver_ip, resolver_port) 
+        run_query(domain_name, resolver_ip, resolver_port, query_type) 
     except TimeoutError:
         print("Execution timed out!")
     finally:
         signal.alarm(0)  # Disable the alarm signal
 
 
-def run_query(domain_name, resolver_ip, resolver_port):
+def run_query(domain_name, resolver_ip, resolver_port, query_type):
     #create client’s socket. 
     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     #now construct a DNS query for the given name
-    dns_query = create_DNS_query(domain_name)
+    dns_query = create_DNS_query(domain_name, query_type)
 
     # UDP we explicilty specify the destination address + Port No for each message
     clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
@@ -166,6 +180,11 @@ def create_DNS_query(domain_name, query_type = 'A'):
     if query_type == 'A':
         qtype = 0x0001  # Type A record (IPv4 address)
     
+    elif query_type == 'MX':
+        qtype = 0x000f  #Type Mail Exchange
+        print("mail exchange")
+
+
     qclass = 0x0001  # Internet class
 
     # Construct the DNS query packet

@@ -352,6 +352,9 @@ def print_question(question_info):
         print("NS", end="")
     elif (int.from_bytes(question_info['q_type'], byteorder='big') == 5):
         print("CNAME", end = "")
+    elif (int.from_bytes(question_info['q_type'], byteorder='big') == 15):
+        print("MX", end = "")
+        
 
     print(f"\tQCLASS:", end="") 
     if (int.from_bytes(question_info['q_class'], byteorder='big') == 1):
