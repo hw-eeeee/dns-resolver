@@ -24,7 +24,7 @@ def start_server():
         dns_query, clientAddress = serverSocket.recvfrom(2048)
         #receive data from the client, now we know who we are talking with
         
-        print("dns query is", dns_query)
+        # print("dns query is", dns_query)
 
         # data = message.decode()
         # print("domain name is ",data)
@@ -75,14 +75,14 @@ def dns_resolver(dns_query):
     while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
         #loop and keep querying 
         server_record = find_new_record(header_info, all_authority, all_additional)
-        print("new record!!!!")
-        print(server_record)
+        # print("new record!!!!")
+        # print(server_record)
         new_server_ip = server_record['data']
-        print("new server ip is", new_server_ip)
+        # print("new server ip is", new_server_ip)
         newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
 
         response, server_address = newSocket.recvfrom(4096)
-        print("huh")
+        # print("huh")
         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
         
     
@@ -93,7 +93,7 @@ def dns_resolver(dns_query):
 def find_new_record(header_info, all_authority, all_additional):
     #find server to use 
     if ((int.from_bytes(header_info['additional_rr'], byteorder='big')) > 0):
-        print("yo")
+        # print("yo")
         # print(all_additional)
         for additional_records in all_additional:
             if ((int.from_bytes(additional_records['q_type'], byteorder='big')) == 1):
@@ -101,7 +101,7 @@ def find_new_record(header_info, all_authority, all_additional):
                 
     else: 
 
-        print(all_authority)
+        # print(all_authority)
         for authority_records in all_authority:
             # if ((int.from_bytes(authority_records['q_type'], byteorder='big')) == 1):
             return authority_records

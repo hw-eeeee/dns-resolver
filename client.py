@@ -48,10 +48,10 @@ def start_client():
     # print()
     # print(c_name_answers)
 
-    #if theres cnames
-    if len(c_name_answers) > 0:
+    while len(c_name_answers) > 0:
         # print("send query again")
         new_domain_name = c_name_answers[0]["data"]
+        c_name_answers = []
         dns_query = create_DNS_query(new_domain_name)
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -59,12 +59,33 @@ def start_client():
         returnedMessage, serverAddress = clientSocket.recvfrom(2048)
         header_info1, question_info1, all_answers1, all_authority1, all_additional1 = decode_response(returnedMessage)
     
-    try:
-        for answer in all_answers1:
-            if answer not in ip_addresses:
-                ip_addresses.append(answer)
-    except:
-        pass
+        try:
+            for answer in all_answers1:
+                if answer not in ip_addresses:
+                    ip_addresses.append(answer)
+                if (int.from_bytes(answer['q_type'], byteorder='big')) == 5:
+                    c_name_answers.append(answer)
+        except:
+            pass
+
+
+    #if theres cnames
+    # if len(c_name_answers) > 0:
+    #     # print("send query again")
+    #     new_domain_name = c_name_answers[0]["data"]
+    #     dns_query = create_DNS_query(new_domain_name)
+    #     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    #     clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
+    #     returnedMessage, serverAddress = clientSocket.recvfrom(2048)
+    #     header_info1, question_info1, all_answers1, all_authority1, all_additional1 = decode_response(returnedMessage)
+    
+    # try:
+    #     for answer in all_answers1:
+    #         if answer not in ip_addresses:
+    #             ip_addresses.append(answer)
+    # except:
+    #     pass
 
     # print("ip addresses", ip_addresses)
 
