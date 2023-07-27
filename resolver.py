@@ -93,22 +93,22 @@ def dns_resolver(dns_query):
             if (return_error != 0):
                 return return_error
             
-    elif (int.from_bytes(question_info['q_type'], byteorder='big') == 15):
-        #MAIL EXCHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
-            #now loop until we get SOA 
-            server_record = find_new_record(header_info, all_authority, all_additional)
-            new_server_ip = server_record['data']
-            newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
+    # elif (int.from_bytes(question_info['q_type'], byteorder='big') == 15):
+    #     #MAIL EXCHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #     while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
+    #         #now loop until we get SOA 
+    #         server_record = find_new_record(header_info, all_authority, all_additional)
+    #         new_server_ip = server_record['data']
+    #         newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
 
-            response, server_address = newSocket.recvfrom(4096)
-            header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+    #         response, server_address = newSocket.recvfrom(4096)
+    #         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
 
-            #error checking
-            flags = header_info['flags']
-            return_error = error_checking(flags)
-            if (return_error != 0):
-                return return_error
+    #         #error checking
+    #         flags = header_info['flags']
+    #         return_error = error_checking(flags)
+    #         if (return_error != 0):
+    #             return return_error
     newSocket.close()
     
     return response
