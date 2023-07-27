@@ -1,5 +1,5 @@
 import socket
-import sys
+import sys, time
 from parse import decode_response, extract_header, extractKBits
 
 
@@ -23,6 +23,9 @@ def start_server():
         dns_query, clientAddress = serverSocket.recvfrom(2048)
         #receive data from the client, now we know who we are talking with
         print("dns query is", dns_query)
+
+        #TEST IF TIMEOUT WORKS
+        # time.sleep(10)
 
         # perform dns resolving 
         response = dns_resolver(dns_query)
@@ -72,7 +75,6 @@ def dns_resolver(dns_query):
             # Process and parse the DNS response as needed
             header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
             break
-
 
 
     #now loop until we get answer != 0 
