@@ -355,13 +355,32 @@ def print_header(header_info):
     print("\n")
 
 def print_question(question_info):
-    print("QUESTION SECTION\n")
-    print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n\n")
+    print("QUESTION SECTION")
+    # print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n")
+    # print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n")
+    print(f"{question_info['domain']}\tQTYPE: ", end="")
 
+    if (int.from_bytes(question_info['q_type'], byteorder='big') == 1):
+            print("A", end="")
+    elif (int.from_bytes(question_info['q_type'], byteorder='big') == 2):
+        print("NS", end="")
+    elif (int.from_bytes(question_info['q_type'], byteorder='big') == 5):
+        print("CNAME", end = "")
+
+    print(f"\tQCLASS:", end="") 
+    if (int.from_bytes(question_info['q_class'], byteorder='big') == 1):
+        print("IN")
+    
+    print()
 
 def print_RR(rr_info):
     print(f"\t NAME: {rr_info['name']}\tQTYPE: {int.from_bytes(rr_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(rr_info['q_class'], byteorder='big')}\tTTL:{int.from_bytes(rr_info['ttl'], byteorder='big')}\tDATA LENGTH:{rr_info['data_len']}\tRDATA:{rr_info['data']}")
 
+def print_partial_header(header_info):
+    print("HEADER")
+    print("TRANSACTION ID:", hex(int.from_bytes(header_info['id'], byteorder='big')), "\t\tFLAGS:", hex(int.from_bytes(header_info['flags'], byteorder='big')))
+    # print("QUESTIONS:", int.from_bytes(header_info['question'], byteorder='big'), "\tANSWER RRs:", int.from_bytes(header_info['answer'], byteorder='big'), "\tAUTHORITY RRs:", int.from_bytes(header_info['authority_rr'], byteorder='big'), "\tADDITIONAL RRs:", int.from_bytes(header_info['additional_rr'], byteorder='big'))
+    print("\n")
 
 # def print_header(id, flags, question, answer, authority_rr, additional_rr):
 #     print("HEADER\n")

@@ -2,7 +2,7 @@ import socket
 import sys
 import random
 import struct
-from parse import decode_response
+from parse import decode_response, print_question, print_header, print_partial_header
 
 if len(sys.argv) != 4:
     print("Error: invalid arguments")
@@ -69,15 +69,32 @@ def start_client():
     # print("ip addresses", ip_addresses)
 
     # print in dig formatting 
+    print_partial_header(header_info)
+    print_question(question_info)
     print_ip_addresses(ip_addresses)
+    print()
     
     clientSocket.close()
 
 
 
 def print_ip_addresses(ip_addresses):
+    print("ANSWER SECTION:")
     for content in ip_addresses:
-        print(f"{content['name']}\tQTYPE: {int.from_bytes(content['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(content['q_class'], byteorder='big')}\tTTL:{int.from_bytes(content['ttl'], byteorder='big')}\tDATA LENGTH:{content['data_len']}\tIP ADDRESS:{content['data']}")
+        # print(f"{content['name']}\tQTYPE: {int.from_bytes(content['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(content['q_class'], byteorder='big')}\tTTL:{int.from_bytes(content['ttl'], byteorder='big')}\tDATA LENGTH:{content['data_len']}\tIP ADDRESS:{content['data']}")
+        print(f"{content['name']}\tQTYPE: ", end="")
+        if (int.from_bytes(content['q_type'], byteorder='big') == 1):
+            print("A", end="")
+        elif (int.from_bytes(content['q_type'], byteorder='big') == 2):
+            print("NS", end="")
+        elif (int.from_bytes(content['q_type'], byteorder='big') == 5):
+            print("CNAME", end = "")
+
+        print(f"\tQCLASS:", end="") 
+        if (int.from_bytes(content['q_class'], byteorder='big') == 1):
+            print("IN", end="")
+
+        print(f"\tTTL:{int.from_bytes(content['ttl'], byteorder='big')}\tDATA LENGTH:{content['data_len']}\tIP ADDRESS:{content['data']}")
 
 
 
