@@ -3,7 +3,7 @@ import sys
 import random
 import struct
 import time, signal
-from parse import decode_response, print_question, print_header, print_partial_header
+from parse import decode_response, print_question, print_header, print_partial_header, print_RR
 
 if len(sys.argv) <= 3 or len(sys.argv) >= 7 :
     print("Error: invalid arguments")
@@ -30,9 +30,6 @@ def start_client():
         #both arguments there
         timeout = sys.argv[4]
         query_type = sys.argv[5]
-
-    # print("timeout is ", timeout)
-    # print("query type is", query_type)
 
     
     run_query_with_timeout(domain_name, resolver_ip, resolver_port, int(timeout), query_type)
@@ -73,15 +70,17 @@ def run_query(domain_name, resolver_ip, resolver_port, query_type):
 
     #parse the message- decode it
     header_info, question_info, all_answers, all_authority, all_additional = decode_response(returnedMessage)
+
+    
     
     #now check if answer section is all A type and if there are CNames that can be 
     #further resolved. Append the answers to a list
-    ip_addresses = resolve_cnames(all_answers, resolver_ip, resolver_port)
-
+    ip_addresses = resolve_cnames(all_answers, resolver_ip, resolver_port, query_type)
     # print in dig formatting 
     print_partial_header(header_info)
     print_question(question_info)
     print_ip_addresses(ip_addresses)
+
     print()
     
     clientSocket.close()
@@ -89,7 +88,7 @@ def run_query(domain_name, resolver_ip, resolver_port, query_type):
 
 
 
-def resolve_cnames(all_answers, resolver_ip, resolver_port):
+def resolve_cnames(all_answers, resolver_ip, resolver_port, query_type):
     ip_addresses = []
     c_name_answers = []
     for answer in all_answers:
@@ -97,11 +96,13 @@ def resolve_cnames(all_answers, resolver_ip, resolver_port):
         if (int.from_bytes(answer['q_type'], byteorder='big')) == 5:
             c_name_answers.append(answer)
 
+    #IF IT'S MX- THERES NO NEED!!!
+    # if (query_type != "MX"):
     while len(c_name_answers) > 0:
         # print("send query again")
         new_domain_name = c_name_answers[0]["data"]
         c_name_answers = []
-        dns_query = create_DNS_query(new_domain_name)
+        dns_query = create_DNS_query(new_domain_name, query_type)
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         clientSocket.sendto(dns_query,(resolver_ip, resolver_port))
@@ -162,7 +163,7 @@ def print_ip_addresses(ip_addresses):
 
 
 
-# automatically type A if no further arguments are given
+# IMPLEMENTED FOR ALL TYPES OF QUERIES
 def create_DNS_query(domain_name, query_type = 'A'):
     # DNS header fields
     transaction_id = 0x1337  # Random transaction ID, you can choose any value
@@ -184,6 +185,17 @@ def create_DNS_query(domain_name, query_type = 'A'):
         qtype = 0x000f  #Type Mail Exchange
         print("mail exchange")
 
+    elif query_type == 'NS':
+        qtype = 0x0002  #Type Name server 
+        print("name server")
+    
+    elif query_type == 'CNAME':
+        qtype = 0x0005  #Type CNAME
+        print("cname")
+
+    elif query_type == 'PTR':
+        qtype = 0x000c  #Type PTR
+        print("ptr")    
 
     qclass = 0x0001  # Internet class
 
@@ -192,6 +204,7 @@ def create_DNS_query(domain_name, query_type = 'A'):
     dns_query += qname
     dns_query += struct.pack('!HH', qtype, qclass)
 
+    # print(dns_query.hex())  
     return dns_query
 
 

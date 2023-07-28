@@ -22,7 +22,7 @@ def start_server():
     while 1:
         dns_query, clientAddress = serverSocket.recvfrom(2048)
         #receive data from the client, now we know who we are talking with
-        print("dns query is", dns_query)
+        # print("dns query is", dns_query)
 
         #TEST IF TIMEOUT WORKS
         # time.sleep(10)
@@ -75,40 +75,33 @@ def dns_resolver(dns_query):
             # Process and parse the DNS response as needed
             header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
             break
+    
+    query_type = int.from_bytes(question_info['q_type'], byteorder='big')
 
-    #for A TYPE QUERY
-    if (int.from_bytes(question_info['q_type'], byteorder='big') == 1):
-        while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
-            #now loop until we get answer != 0 
-            server_record = find_new_record(header_info, all_authority, all_additional)
-            new_server_ip = server_record['data']
-            newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
-
-            response, server_address = newSocket.recvfrom(4096)
+    while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
+        #now loop until we get answer != 0 
+        server_record = find_new_record(header_info, all_authority, all_additional)
+        if ((int.from_bytes(server_record['q_type'], byteorder='big')) == 6):
+            print(response.hex())
             header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+            return response
+        print("new record is", server_record)
+        new_server_ip = server_record['data']
+        print("new rdata type is ", server_record['q_type'])
 
-            #error checking
-            flags = header_info['flags']
-            return_error = error_checking(flags)
-            if (return_error != 0):
-                return return_error
-            
-    # elif (int.from_bytes(question_info['q_type'], byteorder='big') == 15):
-    #     #MAIL EXCHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #     while ((int.from_bytes(header_info['answer'], byteorder='big')) == 0):
-    #         #now loop until we get SOA 
-    #         server_record = find_new_record(header_info, all_authority, all_additional)
-    #         new_server_ip = server_record['data']
-    #         newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
+        print("new ip is", new_server_ip)
+        newSocket.sendto(bytes(dns_query), (new_server_ip, 53))
 
-    #         response, server_address = newSocket.recvfrom(4096)
-    #         header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
+        response, server_address = newSocket.recvfrom(4096)
+        header_info, question_info, all_answers, all_authority, all_additional = decode_response(response)
 
-    #         #error checking
-    #         flags = header_info['flags']
-    #         return_error = error_checking(flags)
-    #         if (return_error != 0):
-    #             return return_error
+
+        #error checking
+        flags = header_info['flags']
+        return_error = error_checking(flags)
+        if (return_error != 0):
+            return return_error
+
     newSocket.close()
     
     return response
