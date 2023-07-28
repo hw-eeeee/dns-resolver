@@ -342,8 +342,6 @@ def print_header(header_info):
 
 def print_question(question_info):
     print("QUESTION SECTION")
-    # print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n")
-    # print(f"DOMAIN NAME: {question_info['domain']}\tQTYPE: {int.from_bytes(question_info['q_type'], byteorder='big')}\tQCLASS: {int.from_bytes(question_info['q_class'], byteorder='big')}\n")
     print(f"{question_info['domain']}\tQTYPE: ", end="")
 
     if (int.from_bytes(question_info['q_type'], byteorder='big') == 1):

@@ -25,11 +25,11 @@ def start_client():
         if (sys.argv[4].isnumeric()):
             timeout = sys.argv[4]
         else: 
-            query_type = sys.argv[4]
+            query_type = sys.argv[4].upper() #fo case insensitivity 
     elif len(sys.argv) == 6:
         #both arguments there
         timeout = sys.argv[4]
-        query_type = sys.argv[5]
+        query_type = sys.argv[5].upper()
 
     
     run_query_with_timeout(domain_name, resolver_ip, resolver_port, int(timeout), query_type)
@@ -96,8 +96,6 @@ def resolve_cnames(all_answers, resolver_ip, resolver_port, query_type):
         if (int.from_bytes(answer['q_type'], byteorder='big')) == 5:
             c_name_answers.append(answer)
 
-    #IF IT'S MX- THERES NO NEED!!!
-    # if (query_type != "MX"):
     while len(c_name_answers) > 0:
         # print("send query again")
         new_domain_name = c_name_answers[0]["data"]
@@ -183,19 +181,22 @@ def create_DNS_query(domain_name, query_type = 'A'):
     
     elif query_type == 'MX':
         qtype = 0x000f  #Type Mail Exchange
-        print("mail exchange")
+        # print("mail exchange")
 
     elif query_type == 'NS':
         qtype = 0x0002  #Type Name server 
-        print("name server")
+        # print("name server")
     
     elif query_type == 'CNAME':
         qtype = 0x0005  #Type CNAME
-        print("cname")
+        # print("cname")
 
     elif query_type == 'PTR':
         qtype = 0x000c  #Type PTR
-        print("ptr")    
+        # print("ptr")    
+    else:
+        print("Error: unknown query type")
+        exit()
 
     qclass = 0x0001  # Internet class
 
