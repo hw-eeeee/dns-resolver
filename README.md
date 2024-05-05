@@ -1,6 +1,6 @@
 # DNS Resolver
 
-Usage: client resolver_ip resolver_port name [timeout=<timeout>] [type=<record_type>]
+Usage: client resolver_ip resolver_port name <timeout> <record_type>
 
 ## Instructions
 STEP 1: 
@@ -20,5 +20,5 @@ Optional parameters can be provided for the timeout and the type of DNS record y
 
 To specify a timeout of 10 seconds and request an MX record, use: 
 
-`python3 client.py 127.0.0.1 5300 www.example.com timeout=10 type=MX`
+`python3 client.py 127.0.0.1 5300 www.example.com 10 MX`
 
